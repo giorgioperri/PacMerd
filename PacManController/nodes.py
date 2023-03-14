@@ -1,9 +1,6 @@
 import pygame
-import constants
-from vector import Vector2
 from constants import *
 import numpy as np
-import random
 
 class Node(object):
     def __init__(self, x, y):
@@ -14,18 +11,18 @@ class Node(object):
                        LEFT:[PACMAN, BLINKY, PINKY, INKY, CLYDE, FRUIT], 
                        RIGHT:[PACMAN, BLINKY, PINKY, INKY, CLYDE, FRUIT]}
 
-        # Dictionary of all visited neighbors 
         self.visitedNeighbors = {}
 
-        # Used for determining path in A*
+        # Reference to the node parent in the pathfinding algorithm
         self.parent = None
 
-        # g = cost of the path from start to the node, 
-        # h = cost of the cheapest path from node to goal,
+        # g = the distance between the current node and the start node
+        # h = estimated distance from the current node to the end node
+        # f = total cost of the node
+
         self.g = 0
         self.f = 0
         self.h = 0
-        self.heuristicModifier = 0
 
     def denyAccess(self, direction, entity):
         if entity.name in self.access[direction]:
@@ -43,20 +40,23 @@ class Node(object):
                 pygame.draw.line(screen, WHITE, line_start, line_end, 4)
                 pygame.draw.circle(screen, RED, self.position.asInt(), 12)
 
-    # Get all accessible neighbors
-    def getAllNodesWithAccess(self, entity_name):
+    # Returns a list of all nodes that have access to the current node (neighbors)
+    def getAllNeighbors(self, entity_name):
         nodes_with_access = []
         for direction in self.neighbors.keys():
             if direction is not None and self.neighbors[direction] is not None:
                 nodes_with_access.append(self.neighbors[direction])
         return nodes_with_access
 
-    # Checks if neighbor node is an actual neighbor and then adds it to dictionary of visited neighbors
+    # The below function states if a node's neighbor has been visited
     def neighborVisited(self, neighbor):
+        # If the dictionary is empty, fill it with all neighbors
         if not self.visitedNeighbors:
             for value in self.neighbors.values():
+                # If the neighbor is not None, add it to the dictionary
                 if value is not None:
                     self.visitedNeighbors[value] = False
+        # Check if the neighbor is in the dictionary
         for key in self.visitedNeighbors.keys():
             if neighbor.position is key.position:
                 self.visitedNeighbors[key] = True
@@ -123,7 +123,6 @@ class NodeGroup(object):
                 elif dataT[col][row] not in self.pathSymbols:
                     key = None
 
-
     def getStartTempNode(self):
         nodes = list(self.nodesLUT.values())
         return nodes[0]
@@ -152,11 +151,6 @@ class NodeGroup(object):
         key = self.constructKey(*otherkey)
         self.nodesLUT[homekey].neighbors[direction] = self.nodesLUT[key]
         self.nodesLUT[key].neighbors[direction*-1] = self.nodesLUT[homekey]
-
-    def getNodeFromPixels(self, xpixel, ypixel):
-        if (xpixel, ypixel) in self.nodesLUT.keys():
-            return self.nodesLUT[(xpixel, ypixel)]
-        return None
 
     def getNodeFromTiles(self, col, row):
         x, y = self.constructKey(col, row)
@@ -196,7 +190,7 @@ class NodeGroup(object):
         for entity in entities:
             self.allowHomeAccess(entity)
 
-    # Dictionary of nodes directly in front and behind ghosts
+    # Keeping track of the nodes near ghosts
     def updateEnemyNodes(self, entity):
         entityPositions = []
         entityPositions.append(entity.node)

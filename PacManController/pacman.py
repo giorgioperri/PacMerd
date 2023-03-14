@@ -1,13 +1,8 @@
 import math
 import random
-
-import pygame
-from pygame.locals import *
-from vector import Vector2
 from constants import *
 from entity import Entity
 from sprites import PacmanSprites
-from queue import Queue
 
 class Pacman(Entity):
     def __init__(self, node, nodes):
@@ -19,20 +14,11 @@ class Pacman(Entity):
         self.alive = True
         self.sprites = PacmanSprites(self)
         self.visitedNodes = []
-
         self.nodes = nodes
-
-        self.path = []
-        self.oldPath = []
         self.destination = list(self.nodes.nodesLUT.values())[60] #just start from a node in the bottom
         self.directionHasBeenSwapped = False
-
-        # Boolean for determining whether A* should consider ghosts as walls
-        self.makeEnemiesWalls = True
-
-        # For checking of ghosts are nearby, as that sometimes changes current behaviour
+        self.considerGhostsAsWalls = True
         self.ghostNearby = False
-
         self.tempIgnoreNodes = []
 
     def reset(self):
@@ -49,24 +35,22 @@ class Pacman(Entity):
 
     def update(self, dt):
         # A* is called to get the next node pac-man should go to
-        # Then we determine what direction we should go next based on that
-        direction = self.getDirection(self.target, self.AStarStep(self.target, self.destination, self.nodes.nodesLUT.values()))
+        direction = self.getDirection(self.target, self.a_star_move(self.target, self.destination, self.nodes.nodesLUT.values()))
 
         self.sprites.update(dt)
         self.position += self.directions[self.direction]*self.speed*dt
 
-
         if self.overshotTarget():
+            # If we are at the end of the path, we need to determine the next node to go to
             if self.node not in self.visitedNodes:
                 self.visitedNodes.append(self.node)
 
+            # if the direction has not been swapped, we need to tell the node that it has been visited
             if not self.directionHasBeenSwapped:
                 self.node.neighborVisited(self.target)
                 self.target.neighborVisited(self.node)
 
-            # Store old path
-            self.oldPath = self.path
-
+            # Set pacman's current node to the target node
             self.node = self.target
 
             self.target = self.getNewTarget(direction)
@@ -77,13 +61,14 @@ class Pacman(Entity):
             if self.target is self.destination:
                 self.destination = self.getClosestUnvisitedNode()
 
+            # this is what might be causing the lag
             if self.target is self.node:
                 self.direction = STOP
             self.setPosition()
 
-            # Reset derectionHasBeenSwapped variable
             self.directionHasBeenSwapped = False
         else:
+            # If we are not at the end of the path, we need to check if we need to swap directions
             if self.oppositeDirection(direction):
                 self.reverseDirection()
                 self.directionHasBeenSwapped = True
@@ -106,11 +91,12 @@ class Pacman(Entity):
         return False
 
     def getClosestUnvisitedNode(self):
+        # This is where we determine the closest unvisited node
         closestNode = None
         closestDistance = 99999
 
         for node in self.nodes.nodesLUT.values():
-            if node not in self.visitedNodes and node.position not in NODE_POSITIONS_IGNORE:
+            if node not in self.visitedNodes and node.position not in NODES_TO_IGNORE:
                 distance = self.checkDistance(self.node, node)
                 if distance < closestDistance:
                     closestDistance = distance
@@ -124,24 +110,19 @@ class Pacman(Entity):
     def checkDistance(self, node1, node2):
         return math.sqrt((node2.position.x - node1.position.x)**2 + (node2.position.y - node1.position.y)**2)
 
-    def get_key(self, val, dict):
-        for key, value in dict.items():
-            if val == value:
-                return key
-
     # Takes two nodes and determines the direction between them
     def getDirection(self, node, next_node):
         for direction, value in node.neighbors.items():
             if value is not None and next_node is not None and value.position == next_node.position:
                 return direction
         return STOP
-    
-    # This is where we utilize A* for pathfinding
-    def AStarStep(self, start_node, end_node, nodes):
+
+    # Using a*, determine the next node for pacman to go to
+    def a_star_move(self, start_node, end_node, nodes):
+
         if end_node is None or start_node.position == end_node.position:
             return start_node
 
-        # Here we reset all nodes' values
         for node in nodes:
             if node is not None:
                 node.g = 0
@@ -149,18 +130,15 @@ class Pacman(Entity):
                 node.h = 0
                 node.parent = None
 
-        # Initialize both open and closed list
         open_list = []
         closed_list = []
 
-        # Add the start nodes to the open_list
         open_list.append(self.node)
         open_list.append(start_node)
 
-        # Loop until you find the destination node
         while len(open_list) > 0:
 
-            # Get the current node (Pacman's location)
+            # Get Pacman's location
             current_node = open_list[0]
             current_index = 0
             for index, item in enumerate(open_list):
@@ -168,68 +146,58 @@ class Pacman(Entity):
                     current_node = item
                     current_index = index
 
-            # Pop current node off open list, add to closed list
             open_list.pop(current_index)
             closed_list.append(current_node)
 
-            # Once destination node is found invert and store it in self.path
             if current_node == end_node:
                 path = []
                 current = current_node
                 while current is not None:
                     path.append(current)
                     current = current.parent
-                path = path[::-1]
+                path = path[::-1] # this weird hierogliphic thing is just reversing the list
 
-                self.path = path
-
-                # Reset makeEnemiesWalls boolean and clear tempIgnoreNodes
-                self.makeEnemiesWalls = True
+                self.considerGhostsAsWalls = True
                 self.tempIgnoreNodes.clear()
 
-                # If path is < 2 it means destination == start_node therefore we return start_node 
-                # else we return next step on the path
+                # If path is < 2 it means the start node is the destination node
                 if len(path) >= 2:
                     return path[1]  # Return first step in the reversed path
                 else:
                     return start_node
 
-            # Temp list for child nodes
-            children = []
+            neighbors = []
 
-            # Finds all accessible neighbors while skipping the ones already in the closed_list and nodes directly in front or behind ghosts
-            for child in current_node.getAllNodesWithAccess(0):
+            for neighbor in current_node.getAllNeighbors(0):
                 skipChild = False
-                if len([closed_child for closed_child in closed_list if closed_child == child]) > 0:
+                if len([closed_child for closed_child in closed_list if closed_child == neighbor]) > 0:
                     continue
 
-                if self.makeEnemiesWalls:
+                if self.considerGhostsAsWalls:
                     for enemyPositions in self.nodes.enemyNodes.values():
-                        if enemyPositions[1].position == child.position or enemyPositions[0].position == child.position:
+                        if enemyPositions[1].position == neighbor.position or enemyPositions[0].position == neighbor.position:
                             skipChild = True
 
                 if not skipChild:
-                    if child is not None:
-                        child.parent = current_node
-                        children.append(child)
+                    if neighbor is not None:
+                        neighbor.parent = current_node
+                        neighbors.append(neighbor)
 
-            # Loop through children
-            for child in children:
-
-                # Compute the f, g, and h values
-                child.g = current_node.g + 10
-                child.h = 0
-                child.f = child.g + child.h
+            for neighbor in neighbors:
+                neighbor.g = current_node.g + 10
+                neighbor.h = 0
+                neighbor.f = neighbor.g + neighbor.h
 
                 # Skip child if it is already in the open list
-                if len([open_node for open_node in open_list if child.position == open_node.position and child.g > open_node.g]) > 0:
+                if len([open_node for open_node in open_list if neighbor.position == open_node.position and neighbor.g > open_node.g]) > 0:
                     continue
 
-                open_list.append(child)
+                open_list.append(neighbor)
 
         # Check for edgecase where no path can be determined due to ghosts acting as walls
+        # Sad because this basically suicides pacman
         if self.ghostNearby:
-            self.makeEnemiesWalls = False
+            self.considerGhostsAsWalls = False
         else:
             self.tempIgnoreNodes.append(end_node.position)
             self.destination = self.getClosestUnvisitedNode()

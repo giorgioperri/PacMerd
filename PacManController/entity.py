@@ -1,8 +1,4 @@
 import pygame
-from pygame.locals import *
-
-import constants
-from vector import Vector2
 from constants import *
 from random import randint
 

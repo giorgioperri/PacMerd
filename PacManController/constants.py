@@ -24,8 +24,7 @@ LEFT = 2
 RIGHT = -2
 PORTAL = 3
 
-# We save the positions of nodes which pac-man is best to ignore
-NODE_POSITIONS_IGNORE = [
+NODES_TO_IGNORE = [
   Vector2(184.0, 256.0),
   Vector2(184.0, 272.0),
   Vector2(184.0, 288.0),
@@ -44,21 +43,6 @@ NODE_POSITIONS_IGNORE = [
   Vector2(432.0, 272.0),
   Vector2(0.0, 272.0),
   Vector2(216.0, 224.0)
-]
-
-# We wanted to use this to improve AI around power pellets, but we never got to it
-POWER_PELLET_ACTUAL_POSITIONS = [
-  Vector2(16.0, 96.0),
-  Vector2(416.0, 96.0),
-  Vector2(16.0, 416.0),
-  Vector2(416.0, 416.0)
-]
-
-# These nodes are given a higher special value (meaning they are worse) 
-# because they only have pellets close in the vertical directions
-CLOSE_TO_PORTAL_NODE = [
-  Vector2(96.0, 272.0),
-  Vector2(336.0, 272.0)
 ]
 
 PACMAN = 0
@@ -81,13 +65,4 @@ LEVELTXT = 1
 READYTXT = 2
 PAUSETXT = 3
 GAMEOVERTXT = 4
-
-# The amount with which a node's special value increases once no pellets are close to it
-VISITED_NEIGHBOR = 50
-GHOST_NEARBY_DISTANCE = 150
-
-# When ghosts are moving towards nodes these are the values we use to increase special value
-SPECIAL_VALUES_ENEMY = {
-  "ENEMY_TARGET_VALUE": 600,
-  "ENEMY_SURROUNDINGS_VALUE": 200,
-}
+GHOST_NEARBY_DISTANCE = 75

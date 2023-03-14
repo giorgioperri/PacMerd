@@ -1,10 +1,6 @@
 import math
-
-import numpy
 import pygame
 from pygame.locals import *
-
-import constants
 from constants import *
 from pacman import Pacman
 from nodes import NodeGroup
@@ -16,7 +12,7 @@ from text import TextGroup
 from sprites import LifeSprites
 from sprites import MazeSprites
 from mazes import MazeController
-from mazedata import MazeData######
+from mazedata import MazeData
 
 class GameController(object):
     def __init__(self):
@@ -74,11 +70,6 @@ class GameController(object):
         self.ghosts.clyde.startNode.denyAccess(LEFT, self.ghosts.clyde)
         self.mazedata.obj.denyGhostsAccess(self.ghosts, self.nodes)
 
-
-        # We do this to start the game automatically so the AI can run wild without human input
-        self.textgroup.hideText()
-        self.pause.setPause(False)
-
     def update(self):
         dt = self.clock.tick(30) / 1000.0
         self.textgroup.update(dt)
@@ -86,7 +77,7 @@ class GameController(object):
         if not self.pause.paused:
             self.ghosts.update(dt)
 
-            # We update the list of known ghost placements for multiple uses
+            # Update nodes nearby ghosts
             for ghost in self.ghosts.ghosts:
                 self.nodes.updateEnemyNodes(ghost)
 
@@ -95,10 +86,10 @@ class GameController(object):
             self.checkPelletEvents()
             self.checkGhostEvents()
             self.checkFruitEvents()
-            self.calculateEnemyDistance()
+            self.checkGhostProximity()
 
             if self.ghosts.ghosts[0].mode.current == 2:
-                self.pacman.makeEnemiesWalls = False
+                self.pacman.considerGhostsAsWalls = False
 
         if self.pacman.alive:
             if not self.pause.paused:
@@ -224,17 +215,11 @@ class GameController(object):
         self.lifesprites.resetLives(self.lives)
         self.fruitCaptured = []
 
-        # Do not pause after game is restarted
-        self.pause.paused = False
-
     def resetLevel(self):
         self.pause.paused = True
         self.pacman.reset()
         self.ghosts.reset()
         self.fruit = None
-
-        # Do not pause after level is reset
-        self.pause.paused = False
 
     def updateScore(self, points):
         self.score += points
@@ -259,21 +244,19 @@ class GameController(object):
 
         pygame.display.update()
 
-    # In the following 2 methods we use vector math on the positions of pac-man and the ghosts 
-    # to determine whether any or none of the ghosts are near pacman. 
-    def calculateEnemyDistance(self):
+    # Check if ghosts are near pacman.
+    def checkGhostProximity(self):
         enemiesClose = False
-        index = 0
 
         for ghost in self.ghosts:
-            if self.CalculateDistance(self.pacman.position, ghost.position, GHOST_NEARBY_DISTANCE):
+            if self.IsDistanceInTreshold(self.pacman.position, ghost.position, GHOST_NEARBY_DISTANCE):
                 enemiesClose = True
 
         if not enemiesClose:
             self.pacman.ghostNearby = False
 
-    def CalculateDistance(self, position1, position2, measure):
-        if math.sqrt((position2.x - position1.x)**2 + (position2.y - position1.y)**2) <= measure:
+    def IsDistanceInTreshold(self, position1, position2, treshold):
+        if math.sqrt((position2.x - position1.x)**2 + (position2.y - position1.y)**2) <= treshold:
             self.pacman.ghostNearby = True
             return True
         return False
