@@ -126,6 +126,8 @@ class Pacman(Entity):
                     closestDistance = distance
                     closestNode = node
 
+        # TODO Get a random node if all nodes have been visited
+
         return closestNode
 
     def checkDistance(self, node1, node2):
