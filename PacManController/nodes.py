@@ -25,6 +25,7 @@ class Node(object):
         self.g = 0
         self.f = 0
         self.h = 0
+        self.heuristicModifier = 0
 
     def denyAccess(self, direction, entity):
         if entity.name in self.access[direction]:
@@ -194,14 +195,6 @@ class NodeGroup(object):
     def allowHomeAccessList(self, entities):
         for entity in entities:
             self.allowHomeAccess(entity)
-
-    # Method for making visible the nodes directly in front and behind ghosts
-    def render(self, screen):
-        if self.debugGhostWalls:
-            for element in self.enemyNodes.values():
-                if element is not None:
-                    pygame.draw.circle(screen, TEAL, (element[1].position.x + 6, element[1].position.y + 6), 12)
-                    pygame.draw.circle(screen, ORANGE, (element[0].position.x + 6, element[0].position.y + 6), 12)
 
     # Dictionary of nodes directly in front and behind ghosts
     def updateEnemyNodes(self, entity):

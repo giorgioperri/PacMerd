@@ -239,7 +239,6 @@ class GameController(object):
 
     def render(self):
         self.screen.blit(self.background, (0, 0))
-        self.nodes.render(self.screen)
         self.pellets.render(self.screen)
         self.pacman.render(self.screen)
         self.ghosts.render(self.screen)

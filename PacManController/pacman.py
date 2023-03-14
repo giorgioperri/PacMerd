@@ -9,7 +9,6 @@ from entity import Entity
 from sprites import PacmanSprites
 from queue import Queue
 
-
 class Pacman(Entity):
     def __init__(self, node, nodes):
         Entity.__init__(self, node)
@@ -25,12 +24,12 @@ class Pacman(Entity):
 
         self.path = []
         self.oldPath = []
-        self.destination = self.getClosestUnvisitedNode()
+        self.destination = list(self.nodes.nodesLUT.values())[60]
         self.directionHasBeenSwapped = False
 
         # Boolean for determining whether A* should consider ghosts as walls
         self.makeEnemiesWalls = True
-        
+
         # For checking of ghosts are nearby, as that sometimes changes current behaviour
         self.ghostNearby = False
 
@@ -75,7 +74,7 @@ class Pacman(Entity):
                 self.direction = direction
 
             # Determine pacman's next destination
-            if self.node is self.destination:
+            if self.target is self.destination:
                 self.destination = self.getClosestUnvisitedNode()
 
             if self.target is self.node:
@@ -106,18 +105,9 @@ class Pacman(Entity):
             return True
         return False
 
-    def getRandomFood(self):
-        choice = random.choice(list(self.nodes.nodesLUT.values()))
-
-        # If the choice has been visited, we pick a new one
-        while choice in self.visitedNodes or choice.position in NODE_POSITIONS_IGNORE:
-            choice = random.choice(list(self.nodes.nodesLUT.values()))
-
-        return choice
-
     def getClosestUnvisitedNode(self):
         closestNode = None
-        closestDistance = 9999999
+        closestDistance = 99999
 
         for node in self.nodes.nodesLUT.values():
             if node not in self.visitedNodes and node.position not in NODE_POSITIONS_IGNORE:
@@ -126,7 +116,8 @@ class Pacman(Entity):
                     closestDistance = distance
                     closestNode = node
 
-        # TODO Get a random node if all nodes have been visited
+        if closestNode is None:
+            closestNode = random.choice(list(self.nodes.nodesLUT.values()))
 
         return closestNode
 
@@ -242,4 +233,5 @@ class Pacman(Entity):
         else:
             self.tempIgnoreNodes.append(end_node.position)
             self.destination = self.getClosestUnvisitedNode()
+
         return None
