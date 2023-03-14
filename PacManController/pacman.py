@@ -14,8 +14,8 @@ class Pacman(Entity):
         Entity.__init__(self, node)
         self.name = PACMAN
         self.color = YELLOW
-        self.direction = RIGHT
-        self.setBetweenNodes(RIGHT)
+        self.direction = LEFT
+        self.setBetweenNodes(LEFT)
         self.alive = True
         self.sprites = PacmanSprites(self)
         self.visitedNodes = []
@@ -24,7 +24,7 @@ class Pacman(Entity):
 
         self.path = []
         self.oldPath = []
-        self.destination = list(self.nodes.nodesLUT.values())[60]
+        self.destination = list(self.nodes.nodesLUT.values())[60] #just start from a node in the bottom
         self.directionHasBeenSwapped = False
 
         # Boolean for determining whether A* should consider ghosts as walls

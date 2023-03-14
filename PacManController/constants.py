@@ -84,7 +84,7 @@ GAMEOVERTXT = 4
 
 # The amount with which a node's special value increases once no pellets are close to it
 VISITED_NEIGHBOR = 50
-CLOSE_TO_GHOST_DISTANCE = 100
+GHOST_NEARBY_DISTANCE = 150
 
 # When ghosts are moving towards nodes these are the values we use to increase special value
 SPECIAL_VALUES_ENEMY = {

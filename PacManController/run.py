@@ -97,6 +97,9 @@ class GameController(object):
             self.checkFruitEvents()
             self.calculateEnemyDistance()
 
+            if self.ghosts.ghosts[0].mode.current == 2:
+                self.pacman.makeEnemiesWalls = False
+
         if self.pacman.alive:
             if not self.pause.paused:
                 self.pacman.update(dt)
@@ -263,7 +266,7 @@ class GameController(object):
         index = 0
 
         for ghost in self.ghosts:
-            if self.CalculateDistance(self.pacman.position, ghost.position, CLOSE_TO_GHOST_DISTANCE):
+            if self.CalculateDistance(self.pacman.position, ghost.position, GHOST_NEARBY_DISTANCE):
                 enemiesClose = True
 
         if not enemiesClose:
