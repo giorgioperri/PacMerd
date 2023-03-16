@@ -24,6 +24,7 @@ LEFT = 2
 RIGHT = -2
 PORTAL = 3
 
+# An array of nodes to ignore when calculating the shortest path
 NODES_TO_IGNORE = [
   Vector2(184.0, 256.0),
   Vector2(184.0, 272.0),
@@ -65,4 +66,6 @@ LEVELTXT = 1
 READYTXT = 2
 PAUSETXT = 3
 GAMEOVERTXT = 4
+
+# The distance at which a ghost will be considered "nearby"
 GHOST_NEARBY_DISTANCE = 75

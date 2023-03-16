@@ -141,10 +141,6 @@ class GameController(object):
             if self.pellets.isEmpty():
                 self.flashBG = True
                 self.pause.paused = True
-                print("We won!")
-                # We remove this funtionality to prevent restarting when a game is won
-                #self.hideEntities()
-                #self.pause.setPause(pauseTime=3, func=self.nextLevel)
 
     def checkGhostEvents(self):
         for ghost in self.ghosts:

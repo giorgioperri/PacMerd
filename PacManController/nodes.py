@@ -17,12 +17,10 @@ class Node(object):
         self.parent = None
 
         # g = the distance between the current node and the start node
-        # h = estimated distance from the current node to the end node
         # f = total cost of the node
 
         self.g = 0
         self.f = 0
-        self.h = 0
 
     def denyAccess(self, direction, entity):
         if entity.name in self.access[direction]:

@@ -34,8 +34,8 @@ class Pacman(Entity):
         self.direction = STOP
 
     def update(self, dt):
-        # A* is called to get the next node pac-man should go to
-        direction = self.getDirection(self.target, self.a_star_move(self.target, self.destination, self.nodes.nodesLUT.values()))
+        # Dijkstra is called to get the next node pac-man should go to
+        direction = self.getDirection(self.target, self.dijkstra_move(self.target, self.destination, self.nodes.nodesLUT.values()))
 
         self.sprites.update(dt)
         self.position += self.directions[self.direction]*self.speed*dt
@@ -91,7 +91,6 @@ class Pacman(Entity):
         return False
 
     def getClosestUnvisitedNode(self):
-        # This is where we determine the closest unvisited node
         closestNode = None
         closestDistance = 99999
 
@@ -102,6 +101,7 @@ class Pacman(Entity):
                     closestDistance = distance
                     closestNode = node
 
+        # if all nodes have been visited, return a random node
         if closestNode is None:
             closestNode = random.choice(list(self.nodes.nodesLUT.values()))
 
@@ -117,12 +117,14 @@ class Pacman(Entity):
                 return direction
         return STOP
 
-    # Using a*, determine the next node for pacman to go to
-    def a_star_move(self, start_node, end_node, nodes):
+    # Determines the next node for pacman to go to
+    def dijkstra_move(self, start_node, end_node, nodes):
 
+        # If the start node is the end node or the end node is None, return the start node
         if end_node is None or start_node.position == end_node.position:
             return start_node
 
+        # Reset all nodes' values
         for node in nodes:
             if node is not None:
                 node.g = 0
@@ -130,33 +132,40 @@ class Pacman(Entity):
                 node.h = 0
                 node.parent = None
 
+        # Add the start node to the open list
         open_list = []
         closed_list = []
 
+        # Add the start node and the current node to the open list
         open_list.append(self.node)
         open_list.append(start_node)
 
         while len(open_list) > 0:
 
-            # Get Pacman's location
+            # Set the current node to the first node in the open list
             current_node = open_list[0]
             current_index = 0
+
+            # Find the node with the lowest f value
             for index, item in enumerate(open_list):
                 if item.f < current_node.f:
                     current_node = item
                     current_index = index
 
+            # Remove the current node from the open list and add it to the closed list
             open_list.pop(current_index)
             closed_list.append(current_node)
 
             if current_node == end_node:
+                # If the current node is the end node, fill the path list and return it as reversed
                 path = []
                 current = current_node
                 while current is not None:
                     path.append(current)
                     current = current.parent
-                path = path[::-1] # this weird hierogliphic thing is just reversing the list
+                path = path[::-1]  # reversing the list
 
+                # Reset the ghost avoidance flag and clear the temporary ignore nodes list
                 self.considerGhostsAsWalls = True
                 self.tempIgnoreNodes.clear()
 
@@ -167,25 +176,31 @@ class Pacman(Entity):
 
             neighbors = []
 
+            # Get all the neighbors of the current node
             for neighbor in current_node.getAllNeighbors(0):
                 skipChild = False
+
+                # Skip if it is already in the closed list
                 if len([closed_child for closed_child in closed_list if closed_child == neighbor]) > 0:
                     continue
 
+                # If we are considering ghosts as walls, we need to check if the neighbor is a ghost
+                # if it is, we need to skip it
                 if self.considerGhostsAsWalls:
                     for enemyPositions in self.nodes.enemyNodes.values():
                         if enemyPositions[1].position == neighbor.position or enemyPositions[0].position == neighbor.position:
                             skipChild = True
 
+                # If the child is not to be skipped and not null, add it to the neighbors list
                 if not skipChild:
                     if neighbor is not None:
                         neighbor.parent = current_node
                         neighbors.append(neighbor)
 
+            # Loop through the neighbors
             for neighbor in neighbors:
                 neighbor.g = current_node.g + 10
-                neighbor.h = 0
-                neighbor.f = neighbor.g + neighbor.h
+                neighbor.f = neighbor.g
 
                 # Skip child if it is already in the open list
                 if len([open_node for open_node in open_list if neighbor.position == open_node.position and neighbor.g > open_node.g]) > 0:
@@ -193,7 +208,7 @@ class Pacman(Entity):
 
                 open_list.append(neighbor)
 
-        # Check for edgecase where no path can be determined due to ghosts acting as walls
+        # Check for case where no path can be determined due to ghosts acting as walls
         # Sad because this basically suicides pacman
         if self.ghostNearby:
             self.considerGhostsAsWalls = False
