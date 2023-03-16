@@ -163,8 +163,7 @@ class Pacman(Entity):
                 # If path is < 2 it means the start node is the destination node
                 if len(path) >= 2:
                     return path[1]  # Return first step in the reversed path
-                else:
-                    return start_node
+                return start_node
 
             neighbors = []
 
